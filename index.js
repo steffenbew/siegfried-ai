@@ -63,7 +63,7 @@ const selectTemplate = async (templates) => {
   }
 };
 
-// Recursive function to handle the chat input
+// Looping function to handle the chat input
 const chatLoop = async () => {
   while (true) {
     const { userInput } = await inquirer.prompt([
@@ -94,7 +94,6 @@ const chatLoop = async () => {
       continue;
     }
 
-    // Call itself to continue the chat
     await processInput(userInput);
   }
 };
