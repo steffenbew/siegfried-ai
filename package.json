@@ -1,0 +1,16 @@
+{
+  "name": "siegfried-ai",
+  "version": "0.1.0",
+  "description": "An OpenAI Chat Interface that makes it easy to create custom agents.",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "author": "Steffen Bewewersdorff",
+  "license": "MIT",
+  "dependencies": {
+    "inquirer": "^9.2.11",
+    "langchain": "^0.0.163"
+  }
+}
