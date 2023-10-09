@@ -1,6 +1,6 @@
-# SiegfriedAI - Your ChatGPT CLI Agents
+# SiegfriedAI - Your Own ChatGPT Agents
 
-> Create task specific ChatGPT agents with text-based prompt templates.
+> Create and manage task specific GPT-4 agents through text-based prompt templates.
 
 SiegfriedAI is a Node.js CLI script to interact with OpenAI's GPT-4 API. It's built on the [langchain](https://github.com/langchain-ai/langchainjs) library. Just drop your text files with GPT prompts into the `templates` folder to create your custom chat agents. Happy hacking!
 
