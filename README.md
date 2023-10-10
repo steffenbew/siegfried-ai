@@ -35,6 +35,8 @@ Set your OpenAI API key as an environment variable:
 export OPENAI_API_KEY=your_openai_api_key_here
 ```
 
+Your API key can be found [here](https://platform.openai.com/account/api-keys).
+
 ## Usage
 
 Customize the chat agents in the `templates` directory:
