@@ -44,7 +44,9 @@ templates/
 ├── Customer Support.txt
 ├── Developer.txt
 ├── Final Cut Pro.txt
+├── Flynt Component.txt
 ├── Meeting Notes.txt
+├── Titles.txt
 ```
 
 Run the chat interface:
