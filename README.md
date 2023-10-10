@@ -2,7 +2,7 @@
 
 > Create and manage task specific GPT AI agents through text-based prompt templates.
 
-SiegfriedAI is a Node.js CLI script to interact with OpenAI's GPT API. It's built on the [langchain](https://github.com/langchain-ai/langchainjs) library. Just drop your text files with GPT prompts into the `templates` folder to create your custom chat agents. Happy hacking!
+SiegfriedAI is a Node.js script to interact with OpenAI's GPT models from your CLI using prompt-based agents. Simply drop your text files with GPT prompts into the `templates` folder to create your customized chat agents.
 
 ![SiegfriedAI example](docs/example.gif) 
 

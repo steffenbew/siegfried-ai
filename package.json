@@ -11,6 +11,6 @@
   "license": "MIT",
   "dependencies": {
     "inquirer": "^9.2.11",
-    "langchain": "^0.0.163"
+    "openai": "^4.11.1"
   }
 }

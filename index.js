@@ -1,31 +1,13 @@
 #!/usr/bin/env node
 
-import { ChatOpenAI } from "langchain/chat_models/openai";
+import OpenAI from 'openai';
 import inquirer from 'inquirer';
 import fs from 'fs';
 import path, { dirname } from 'path';
 import { fileURLToPath } from 'url';
 
 // Initialize OpenAI Chat model
-const model = new ChatOpenAI({
-  openAIApiKey: process.env.OPENAI_API_KEY,
-  modelName: "gpt-3.5-turbo", // optionally change to gpt-4
-  streaming: true,
-  callbacks: [
-    {
-      handleLLMStart() {
-        process.stdout.write(`\nAI: `);
-      },
-      // stream chat output to console
-      handleLLMNewToken(token) {
-        process.stdout.write(token);
-      },
-      handleLLMEnd() {
-        process.stdout.write(`\n\n`);
-      },
-    },
-  ],
-});
+const openai = new OpenAI();
 
 // Store chat message history
 let chatMessages = [];
@@ -59,7 +41,7 @@ const selectTemplate = async (templates) => {
   ]);
 
   if (selectedTemplate !== 'ChatGPT') {
-    chatMessages.push(["system", (await templates)[selectedTemplate]]);
+    chatMessages.push({ "role": "system", "content": (await templates)[selectedTemplate]});
   }
 };
 
@@ -100,9 +82,28 @@ const chatLoop = async () => {
 
 // Call the OpenAI Chat model with user input and chat history
 const processInput = async (input) => {
-  chatMessages.push(["human", input]);
-  const response = await model.predictMessages(chatMessages);
-  chatMessages.push(["ai", response.content]);
+  chatMessages.push({ "role": "user", "content": input });
+
+  let content = '';
+
+  const stream = await openai.chat.completions.create({
+    model: "gpt-3.5-turbo", // optionally change to gpt-4
+    messages: chatMessages,
+    stream: true
+  });
+
+  process.stdout.write(`\nAI: `);
+
+  // Stream chunks to console
+  for await (const part of stream) {
+    const contentPart = part.choices[0]?.delta?.content || '';
+    process.stdout.write(contentPart);
+    content += contentPart;
+  }
+
+  process.stdout.write(`\n\n`);
+
+  chatMessages.push({ "role": "assistant", "content": content });
 };
 
 // Main entry point
