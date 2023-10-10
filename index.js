@@ -9,7 +9,7 @@ import { fileURLToPath } from 'url';
 // Initialize OpenAI Chat model
 const model = new ChatOpenAI({
   openAIApiKey: process.env.OPENAI_API_KEY,
-  modelName: "gpt-4",
+  modelName: "gpt-3.5-turbo", // optionally change to gpt-4
   streaming: true,
   callbacks: [
     {
