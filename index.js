@@ -1,89 +1,41 @@
 #!/usr/bin/env node
 
 import OpenAI from 'openai';
-import inquirer from 'inquirer';
 import fs from 'fs';
-import path, { dirname } from 'path';
-import { fileURLToPath } from 'url';
+import path from 'path';
+import input from '@inquirer/input';
+import select from '@inquirer/select';
+import editor from '@inquirer/editor';
 
-// Initialize OpenAI Chat model
 const openai = new OpenAI();
 
-// Store chat message history
-let chatMessages = [];
+const loadTemplatesFromDirectory = (directory) => fs.readdirSync(directory)
+  .filter(file => file.endsWith('.txt'))
+  .map(filename => ({
+    name: path.basename(filename, '.txt'),
+    value: fs.readFileSync(path.join(directory, filename), 'utf-8')
+  }));
 
-// Load chat templates from the 'templates' directory
-const loadTemplates = () => {
-  const __dirname = dirname(fileURLToPath(import.meta.url));
-  const templateDir = path.join(__dirname, 'templates');
-  const filenames = fs.readdirSync(templateDir).filter(file => file.endsWith('.txt'));
-  const templates = {};
+const promptUserForTemplate = async (templates) => select({
+  message: 'Select your template:',
+  choices: [{ name: 'ChatGPT', value: '' },  ...templates]
+});
 
-  filenames.forEach((filename) => {
-    const name = path.basename(filename, ".txt");
-    const content = fs.readFileSync(path.join(templateDir, filename), "utf-8");
-    templates[name] = content;
-  });
+const promptUserForMessage = async () => {
+  let userInput = await input({ message: 'You:' });
 
-  return templates;
-};
-
-// Ask user to select a template option
-const selectTemplate = async (templates) => {
-  const choices = ['ChatGPT', ...Object.keys(await templates)];
-  const { selectedTemplate } = await inquirer.prompt([
-    {
-      type: 'list',
-      name: 'selectedTemplate',
-      message: 'Select your template:',
-      choices
-    }
-  ]);
-
-  if (selectedTemplate !== 'ChatGPT') {
-    chatMessages.push({ "role": "system", "content": (await templates)[selectedTemplate]});
+  // Provide an editor for multine input
+  if (userInput.trim() === '') {
+    userInput = await editor({
+      message: 'Write your message in the editor:',
+      waitForUseInput: false
+    });
   }
-};
 
-// Looping function to handle the chat input
-const chatLoop = async () => {
-  while (true) {
-    const { userInput } = await inquirer.prompt([
-      {
-        type: 'input',
-        name: 'userInput',
-        message: 'You:'
-      }
-    ]);
+  return userInput;
+}
 
-    if (userInput.trim().toLowerCase() === 'exit') {
-      break;
-    }
-
-    // Provide an editor for multine input
-    if (userInput.trim() === '') {
-      const { editedContent } = await inquirer.prompt([
-        {
-          type: 'editor',
-          name: 'editedContent',
-          message: 'Write your message in the editor:'
-        }
-      ]);
-
-      if (editedContent.trim() !== '') {
-        await processInput(editedContent);
-      }
-      continue;
-    }
-
-    await processInput(userInput);
-  }
-};
-
-// Call the OpenAI Chat model with user input and chat history
-const processInput = async (input) => {
-  chatMessages.push({ "role": "user", "content": input });
-
+const generateAIResponse = async (chatMessages) => {
   let content = '';
 
   const stream = await openai.chat.completions.create({
@@ -96,19 +48,40 @@ const processInput = async (input) => {
 
   // Stream chunks to console
   for await (const part of stream) {
-    const contentPart = part.choices[0]?.delta?.content || '';
+    const contentPart = part.choices[0]?.delta?.content || '';
     process.stdout.write(contentPart);
     content += contentPart;
   }
 
   process.stdout.write(`\n\n`);
 
-  chatMessages.push({ "role": "assistant", "content": content });
+  return content;
 };
 
-// Main entry point
-(async () => {
-  const templates = loadTemplates();
-  await selectTemplate(templates);
-  await chatLoop();
-})();
+// Recursively handle chat sessions
+const initiateChatSession = async () => {
+  try {
+    let chatMessages = [];
+    const templates = loadTemplatesFromDirectory('templates');
+    const template = await promptUserForTemplate(templates);
+
+    if (template.trim() !== '') {
+      chatMessages.push({ "role": "system", "content": template });
+    }
+
+    // loop chat until user types 'exit'
+    while (true) {
+      const userInput = await promptUserForMessage();
+      if (userInput.trim() === '') continue;
+      if (userInput.trim().toLowerCase() === 'exit') break;
+
+      chatMessages.push({ "role": "user", "content": userInput });
+      const assistantResponse = await generateAIResponse(chatMessages);
+      chatMessages.push({ "role": "assistant", "content": assistantResponse });
+    }
+
+    initiateChatSession(templates);
+  } catch { }
+};
+
+initiateChatSession();

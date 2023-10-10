@@ -1,7 +1,7 @@
 {
   "name": "siegfried-ai",
   "version": "0.1.0",
-  "description": "An OpenAI Chat Interface that makes it easy to create custom agents.",
+  "description": "Create your own ChatGPT AI agents through text-based prompt templates.",
   "main": "index.js",
   "type": "module",
   "scripts": {
@@ -10,7 +10,7 @@
   "author": "Steffen Bewewersdorff",
   "license": "MIT",
   "dependencies": {
-    "inquirer": "^9.2.11",
+    "@inquirer/prompts": "^3.2.0",
     "openai": "^4.11.1"
   }
 }
