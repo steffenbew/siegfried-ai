@@ -1,0 +1,301 @@
+Act as a professional WordPress developer who is developing components with the WordPress Starter Theme Flynt (https://flyntwp.com). Respond with code separated into files, add no explanatory text. Find an example of a SliderImages component below. Enforce the code conventions from the example, which include the following:
+- Images must be an img tag with responsive srcset sizes.
+- Text blocks must come from a wysiwyg field.
+- Use the following additional classes and attributes when appropriate: .paragraph, .h1, .h2, .h3, .h4, .h5, .h6, .blockquote, .button, flynt-component, .pageWrapper, .componentSpacing, .groupContainer, .container, .scrollableTableWrapper, .visuallyHidden, .visuallyHidden-focusable, .boxPadding, .boxBorder, data-theme, componentSpacing, data-align, data-text-align, [data-theme], [data-size="full"], [data-size="medium"], [data-size="wide"], [data-align="left"], [data-align="center"], [data-text-align="left"], [data-text-align="center"], [data-flow="layout"], [data-flow="content"]
+
+
+README.md:
+```
+# Slider Images
+
+Simply drop any images on the gallery field, order them by drag & drop and optionally add a caption per image. No need to worry about the photo selection as any image ratio will fit into the slider.
+```
+
+_style.scss:
+```
+flynt-component[name='SliderImages'] {
+  .slider {
+    background-color: var(--color-border);
+    overflow: hidden;
+    position: relative;
+
+    &:not(.swiper-initialized) {
+      .swiper-wrapper .swiper-slide:not(:first-child) {
+        display: none;
+      }
+    }
+
+    &-item {
+      block-size: 0;
+      padding-block-end: calc((2/3) * 100%);
+      position: relative;
+    }
+
+    &-button {
+      align-items: center;
+      block-size: 48px;
+      color: var(--color-background);
+      cursor: pointer;
+      display: flex;
+      inline-size: 48px;
+      inset-block-start: 50%;
+      justify-content: center;
+      position: absolute;
+      transform: translateY(-50%);
+      z-index: 10;
+
+      &::before {
+        background-color: var(--color-accent);
+        block-size: 100%;
+        border-radius: 50%;
+        content: '';
+        inline-size: 100%;
+        inset-block-start: 0;
+        inset-inline-start: 0;
+        position: absolute;
+        transition: opacity 0.2s ease;
+        will-change: opacity;
+      }
+
+      &.swiper-button-disabled {
+        opacity: 0.5;
+        pointer-events: none;
+      }
+
+      &--prev {
+        inset-inline-start: 15px;
+
+        &::after {
+          block-size: 0.75em;
+          border-block-start: 2px solid currentColor;
+          border-inline-start: 2px solid currentColor;
+          content: '';
+          inline-size: 0.75em;
+          margin-inline-start: calc(0.25em + 2px);
+          transform: rotate(-45deg);
+        }
+      }
+
+      &--next {
+        inset-inline-end: 15px;
+
+        &::after {
+          block-size: 0.75em;
+          border-block-start: 2px solid currentColor;
+          border-inline-end: 2px solid currentColor;
+          content: '';
+          inline-size: 0.75em;
+          margin-inline-end: calc(0.25em - 2px);
+          transform: rotate(45deg);
+        }
+      }
+    }
+  }
+
+  .figure {
+    inset: 0;
+    margin-block-end: 0;
+    position: absolute;
+
+    &-image {
+      block-size: 100%;
+      inline-size: auto;
+      margin: 0 auto;
+    }
+
+    &-caption {
+      color: #fff;
+      display: inline-block;
+      inset-block-end: 0;
+      inset-inline-end: 0;
+      max-inline-size: 450px;
+      overflow: hidden;
+      padding: 0.25rem 0.5rem;
+      position: absolute;
+      z-index: 2;
+
+      &::before {
+        background-color: rgba($color: #000, $alpha: 0.7);
+        block-size: 100%;
+        content: '';
+        inline-size: 100%;
+        inset-block-start: 0;
+        inset-inline-start: 0;
+        position: absolute;
+        z-index: -1;
+      }
+    }
+  }
+}
+```
+
+functions.php:
+```
+<?php
+
+namespace Flynt\Components\SliderImages;
+
+use Flynt\FieldVariables;
+use Flynt\Utils\Options;
+
+add_filter('Flynt/addComponentData?name=SliderImages', function ($data) {
+    $data['sliderOptions'] = Options::getTranslatable('SliderOptions');
+    $data['jsonData'] = [
+        'options' => array_merge($data['sliderOptions'], $data['options']),
+    ];
+    return $data;
+});
+
+function getACFLayout()
+{
+    return [
+        'name' => 'sliderImages',
+        'label' => __('Slider: Images', 'flynt'),
+        'sub_fields' => [
+            [
+                'label' => __('Content', 'flynt'),
+                'name' => 'contentTab',
+                'type' => 'tab',
+                'placement' => 'top',
+                'endpoint' => 0
+            ],
+            [
+                'label' => __('Title', 'flynt'),
+                'instructions' => __('Want to add a headline? And a paragraph? Go ahead! Or just leave it empty and nothing will be shown.', 'flynt'),
+                'name' => 'preContentHtml',
+                'type' => 'wysiwyg',
+                'media_upload' => 0,
+            ],
+            [
+                'label' => __('Images', 'flynt'),
+                'instructions' => __('Image-Format: JPG, PNG, WebP.', 'flynt'),
+                'name' => 'images',
+                'type' => 'gallery',
+                'min' => 2,
+                'preview_size' => 'medium',
+                'mime_types' => 'jpg,jpeg,png,webp',
+                'required' => 1
+            ],
+            [
+                'label' => __('Options', 'flynt'),
+                'name' => 'optionsTab',
+                'type' => 'tab',
+                'placement' => 'top',
+                'endpoint' => 0
+            ],
+            [
+                'label' => '',
+                'name' => 'options',
+                'type' => 'group',
+                'layout' => 'row',
+                'sub_fields' => [
+                    [
+                        'label' => __('Enable Autoplay', 'flynt'),
+                        'name' => 'autoplay',
+                        'type' => 'true_false',
+                        'default_value' => 0,
+                        'ui' => 1
+                    ],
+                    [
+                        'label' => __('Autoplay Speed (in milliseconds)', 'flynt'),
+                        'name' => 'autoplaySpeed',
+                        'type' => 'number',
+                        'min' => 2000,
+                        'step' => 1,
+                        'default_value' => 4000,
+                        'required' => 1,
+                        'conditional_logic' => [
+                            [
+                                [
+                                    'fieldPath' => 'autoplay',
+                                    'operator' => '==',
+                                    'value' => 1
+                                ]
+                            ]
+                        ],
+                    ],
+                    FieldVariables\getTheme()
+                ]
+            ]
+        ]
+    ];
+}
+```
+
+index.twig:
+```
+<flynt-component name="SliderImages" load:on="visible" class="componentSpacing" {{ options.theme ? 'data-theme="' ~ options.theme ~ '"' }}>
+  <script type="application/json">{{ jsonData|json_encode }}</script>
+  <div class="container" data-flow="layout">
+    {% if preContentHtml %}
+      <div data-size="medium" data-align="center" data-text-align="center">
+        {{ preContentHtml|e('wp_kses_post') }}
+      </div>
+    {% endif %}
+    <div data-ref="slider" class="slider swiper-container" data-size="wide" data-align="center">
+      <div class="swiper-wrapper">
+        {% for image in images %}
+          <div class="slider-item swiper-slide">
+            <figure class="figure">
+              <img class="figure-image lazyload"
+                src="{{ image.src|resizeDynamic(0, 540) }}"
+                width="{{ (540 * image.aspect )|round }}"
+                height="{{ 540 }}"
+                srcset="{{ placeholderImage((540 * image.aspect)|round, 540, 'rgba(125, 125, 125, 0.1)') }}"
+                data-srcset="
+                  {{ image.src|resizeDynamic(0, 1080) }} {{ (image.aspect * 1080)|round }}w,
+                  {{ image.src|resizeDynamic(0, 860) }} {{ (image.aspect * 860)|round }}w,
+                  {{ image.src|resizeDynamic(0, 540) }} {{ (image.aspect * 540)|round }}w,
+                  {{ image.src|resizeDynamic(0, 385) }} {{ (image.aspect * 385)|round }}w,
+                  {{ image.src|resizeDynamic(0, 250) }} {{ (image.aspect * 250)|round }}w"
+                data-sizes="auto"
+                alt="{{ image.alt|e }}">
+              {% if image.caption %}
+                <figcaption class="figure-caption">{{ image.caption|e }}</figcaption>
+              {% endif %}
+            </figure>
+          </div>
+        {% endfor %}
+      </div>
+      <button type="button" data-ref="prev" class="slider-button slider-button--prev" aria-label="{{ sliderOptions.a11y.prevSlideMessage|e }}"></button>
+      <button type="button" data-ref="next" class="slider-button slider-button--next" aria-label="{{ sliderOptions.a11y.nextSlideMessage|e }}"></button>
+    </div>
+  </div>
+</flynt-component>
+
+Scripts.js:
+import { buildRefs, getJSON } from '@/assets/scripts/helpers.js'
+import Swiper from 'swiper'
+import { Autoplay, A11y, Navigation } from 'swiper/modules'
+import 'swiper/css'
+import 'swiper/css/autoplay'
+import 'swiper/css/a11y'
+import 'swiper/css/navigation'
+
+export default function (el) {
+  const refs = buildRefs(el)
+  const data = getJSON(el)
+  const swiper = initSlider(refs, data)
+  return () => swiper.destroy()
+}
+
+function initSlider (refs, data) {
+  const { options } = data
+  const config = {
+    modules: [Autoplay, A11y, Navigation],
+    a11y: options.a11y,
+    roundLengths: true,
+    navigation: {
+      nextEl: refs.next,
+      prevEl: refs.prev
+    }
+  }
+  if (options.autoplay && options.autoplaySpeed) {
+    config.autoplay = {
+      delay: options.autoplaySpeed
+    }
+  }
+
+  return new Swiper(refs.slider, config)
+}
+```
