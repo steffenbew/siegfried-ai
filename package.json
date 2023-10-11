@@ -11,6 +11,6 @@
   "license": "MIT",
   "dependencies": {
     "@inquirer/prompts": "^3.2.0",
-    "openai": "^4.11.1"
+    "langchain": "^0.0.165"
   }
 }

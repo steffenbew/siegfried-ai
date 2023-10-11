@@ -1,13 +1,25 @@
-#!/usr/bin/env node
-
-import OpenAI from 'openai';
+import { ChatOpenAI } from "langchain/chat_models/openai";
+import { SystemMessage, HumanMessage, AIMessage } from "langchain/schema";
+import { input, select, editor } from '@inquirer/prompts';
 import fs from 'fs';
 import path from 'path';
-import input from '@inquirer/input';
-import select from '@inquirer/select';
-import editor from '@inquirer/editor';
 
-const openai = new OpenAI();
+const model = new ChatOpenAI({
+  modelName: "gpt-3.5-turbo", // optionally change to gpt-4
+  streaming: true,
+  callbacks: [{
+    handleLLMStart() {
+      process.stdout.write(`\nAI: `);
+    },
+    // stream chat output to console
+    handleLLMNewToken(token) {
+      process.stdout.write(token);
+    },
+    handleLLMEnd() {
+      process.stdout.write(`\n\n`);
+    }
+  }]
+});
 
 const loadTemplatesFromDirectory = (directory) => fs.readdirSync(directory)
   .filter(file => file.endsWith('.txt'))
@@ -18,13 +30,13 @@ const loadTemplatesFromDirectory = (directory) => fs.readdirSync(directory)
 
 const promptUserForTemplate = async (templates) => select({
   message: 'Select your template:',
-  choices: [{ name: 'ChatGPT', value: '' },  ...templates]
+  choices: templates
 });
 
 const promptUserForMessage = async () => {
   let userInput = await input({ message: 'You:' });
 
-  // Provide an editor for multine input
+  // Provide an editor for multiline input
   if (userInput.trim() === '') {
     userInput = await editor({
       message: 'Write your message in the editor:',
@@ -35,53 +47,28 @@ const promptUserForMessage = async () => {
   return userInput;
 }
 
-const generateAIResponse = async (chatMessages) => {
-  let content = '';
-
-  const stream = await openai.chat.completions.create({
-    model: "gpt-3.5-turbo", // optionally change to gpt-4
-    messages: chatMessages,
-    stream: true
-  });
-
-  process.stdout.write(`\nAI: `);
-
-  // Stream chunks to console
-  for await (const part of stream) {
-    const contentPart = part.choices[0]?.delta?.content || '';
-    process.stdout.write(contentPart);
-    content += contentPart;
-  }
-
-  process.stdout.write(`\n\n`);
-
-  return content;
-};
-
 // Recursively handle chat sessions
 const initiateChatSession = async () => {
-  try {
-    let chatMessages = [];
-    const templates = loadTemplatesFromDirectory('templates');
-    const template = await promptUserForTemplate(templates);
+  let chatMessages = [];
+  const templates = loadTemplatesFromDirectory('templates');
+  const template = await promptUserForTemplate([{ name: 'ChatGPT', value: '' },  ...templates]);
 
-    if (template.trim() !== '') {
-      chatMessages.push({ "role": "system", "content": template });
-    }
+  if (template.trim() !== '') {
+    chatMessages.push(new SystemMessage(template));
+  }
 
-    // loop chat until user types 'exit'
-    while (true) {
-      const userInput = await promptUserForMessage();
-      if (userInput.trim() === '') continue;
-      if (userInput.trim().toLowerCase() === 'exit') break;
+  // loop chat until user types 'exit'
+  while (true) {
+    const userInput = await promptUserForMessage();
+    if (userInput.trim() === '') continue;
+    if (userInput.trim().toLowerCase() === 'exit') break;
 
-      chatMessages.push({ "role": "user", "content": userInput });
-      const assistantResponse = await generateAIResponse(chatMessages);
-      chatMessages.push({ "role": "assistant", "content": assistantResponse });
-    }
+    chatMessages.push(new HumanMessage(userInput));
+    const aiResponse = await model.call(chatMessages);
+    chatMessages.push(new AIMessage(aiResponse.content));
+  }
 
-    initiateChatSession(templates);
-  } catch { }
+  initiateChatSession(templates);
 };
 
 initiateChatSession();
